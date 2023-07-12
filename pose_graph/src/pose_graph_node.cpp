@@ -17,17 +17,34 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "keyframe.h"
+#include "transmission.cpp"
 #include "utility/tic_toc.h"
 #include "pose_graph.h"
 #include "utility/CameraPoseVisualization.h"
 #include "parameters.h"
 #define SKIP_FIRST_CNT 10
+
+
+// Socket Programming
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <cstring>
+#include <algorithm>
+#define PORT 12345
+#define BUFFER_SIZE 4096
+
 using namespace std;
 
 queue<sensor_msgs::ImageConstPtr> image_buf;
 queue<sensor_msgs::PointCloudConstPtr> point_buf;
 queue<nav_msgs::Odometry::ConstPtr> pose_buf;
 queue<Eigen::Vector3d> odometry_buf;
+
+
+queue<TransmitKeyFrame> keyframe_buffer;
+
+
 std::mutex m_buf;
 std::mutex m_process;
 int frame_index  = 0;
@@ -65,6 +82,11 @@ std::string VINS_RESULT_PATH;
 CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
 Eigen::Vector3d last_t(-100, -100, -100);
 double last_image_time = -1;
+
+
+void ConnectandTransmitKeyFrame(const TransmitKeyFrame& dummy_kf);
+void transmitkeyframe(const KeyFrame& keyframe);
+
 
 void new_sequence()
 {
@@ -177,6 +199,7 @@ void imu_forward_callback(const nav_msgs::Odometry::ConstPtr &forward_msg)
         cameraposevisual.publish_by(pub_camera_pose_visual, forward_msg->header);
     }
 }
+
 void relo_relative_pose_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
 {
     Vector3d relative_t = Vector3d(pose_msg->pose.pose.position.x,
@@ -412,11 +435,18 @@ void process()
                 }
 
                 KeyFrame* keyframe = new KeyFrame(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
-                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence);   
+                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence); 
+                // KeyFrame keyframe(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
+                //                    point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
+
                 m_process.lock();
                 start_flag = 1;
                 posegraph.addKeyFrame(keyframe, 1);
                 m_process.unlock();
+                
+                // keyframe_buffer.push(*keyframe);
+                // TransmitKeyFrame(keyframe_buffer.front());
+                // keyframe_buffer.pop();
                 frame_index++;
                 last_t = T;
             }
@@ -449,6 +479,72 @@ void command()
         std::chrono::milliseconds dura(5);
         std::this_thread::sleep_for(dura);
     }
+}
+
+void ConnectandTransmitKeyFrame(TransmitKeyFrame& dummy_kf) {
+    // Create a socket
+    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket == -1) {
+        std::cerr << "Socket creation failed." << std::endl;
+        return;
+    }
+
+    // Set up the server address
+    struct sockaddr_in serverAddress{};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(PORT);
+    serverAddress.sin_addr.s_addr = inet_addr("10.2.129.86"); // Server IP address
+
+    // Connect to the server
+    if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {
+        std::cerr << "Connection failed." << std::endl;
+        close(clientSocket);
+        return;
+    }
+
+    std::cout << "Connected to the server." << std::endl;
+
+    // Serialize the KeyFrame object
+    std::string serializedData(reinterpret_cast<const char*>(&dummy_kf), sizeof(dummy_kf));
+
+    // Send the total size of the serialized data to the server
+    size_t dataSize = serializedData.size();
+    std::cout << "Data size: " << dataSize << std::endl;
+    ssize_t bytesSent = send(clientSocket, &dataSize, sizeof(dataSize), 0);
+    if (bytesSent < 0) {
+        std::cerr << "Failed to send data size to the server." << std::endl;
+        close(clientSocket);
+        return;
+    }
+
+    // Send the serialized data to the server in chunks
+    ssize_t totalBytesSent = 0;
+    while (totalBytesSent < dataSize) {
+        ssize_t remainingBytes = dataSize - totalBytesSent;
+        ssize_t bytesToSend = BUFFER_SIZE < remainingBytes ? BUFFER_SIZE : remainingBytes;
+        bytesSent = send(clientSocket, serializedData.data() + totalBytesSent, bytesToSend, 0);
+        if (bytesSent < 0) {
+            std::cerr << "Failed to send data to the server." << std::endl;
+            close(clientSocket);
+            return;
+        }
+        totalBytesSent += bytesSent;
+    }
+
+    std::cout << "KeyFrame object sent to the server. Total Bytes sent: " << totalBytesSent << std::endl;
+    
+    // Close the client socket
+    close(clientSocket);
+
+    return;
+}
+
+void transmitkeyframe(KeyFrame& keyframe){
+    // KeyFrame keyframe;
+    TransmitKeyFrame keyframe2transmit(keyframe);
+    ConnectandTransmitKeyFrame(keyframe2transmit);
+    std::cout << "Transmitted Keyframe with index " << keyframe2transmit.index << " successfully" << std::endl;
+    return;
 }
 
 int main(int argc, char **argv)
@@ -542,9 +638,14 @@ int main(int argc, char **argv)
 
     std::thread measurement_process;
     std::thread keyboard_command_process;
+    // std::thread transmit_process;
 
     measurement_process = std::thread(process);
     keyboard_command_process = std::thread(command);
+
+    // for (auto i : keyframe_buffer){
+    //     transmit_process = std::thread(transmitkeyframe(i));
+    // } 
 
 
     ros::spin();
