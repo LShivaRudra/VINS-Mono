@@ -86,9 +86,9 @@ public:
 	Eigen::Vector3d origin_vio_T;		
 	Eigen::Matrix3d origin_vio_R;
 
-    int* point3darr;  //replaces vector<cv::Point3f> point_3d
-	int* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
-	int* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
+    float* point3darr;  //replaces vector<cv::Point3f> point_3d
+	float* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
+	float* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
 
 	vector<double> point_id;
 
