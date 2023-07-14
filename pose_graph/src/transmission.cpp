@@ -25,6 +25,9 @@ public:
             }
             delete[] imgarray;
         }
+        delete[] point3darr;
+        delete[] point2DuvArr;
+        delete[] point2DnormArr;
     }
 
     TransmitKeyFrame(KeyFrame& keyframe){
@@ -45,9 +48,13 @@ public:
         }
         convertCvMatToArray(keyframe.image, imgarray);
         
-        // convertPoint3fToArray(keyframe.point_3d, point3darr);
-        // convertPoint2fToArray(keyframe.point_2d_uv, point2DuvArr);
-        // convertPoint2fToArray(keyframe.point_2d_norm, point2DnormArr);
+
+        point3darr = new int[keyframe.point_3d.size() * 3];
+        point2DuvArr = new int[keyframe.point_2d_uv.size() * 2];
+        point2DnormArr = new int[keyframe.point_2d_norm.size() * 2];
+        convertPoint3fToArray(keyframe.point_3d, point3darr);
+        convertPoint2fToArray(keyframe.point_2d_uv, point2DuvArr);
+        convertPoint2fToArray(keyframe.point_2d_norm, point2DnormArr);
 
         point_id = keyframe.point_id;
 
@@ -79,9 +86,9 @@ public:
 	Eigen::Vector3d origin_vio_T;		
 	Eigen::Matrix3d origin_vio_R;
 
-    // int* point3darr;  //replaces vector<cv::Point3f> point_3d
-	// int* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
-	// int* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
+    int* point3darr;  //replaces vector<cv::Point3f> point_3d
+	int* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
+	int* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
 
 	vector<double> point_id;
 
@@ -116,7 +123,7 @@ private :
     int image_cols;
     int image_chans;
 
-    void convertPoint3fToArray(const std::vector<cv::Point3f>& points, int* arr) {
+    void convertPoint3fToArray(const std::vector<cv::Point3f>& points, int*& arr) {
         for (size_t i = 0; i < points.size(); i++) {
             arr[i * 3] = static_cast<int>(points[i].x);
             arr[i * 3 + 1] = static_cast<int>(points[i].y);
@@ -124,7 +131,7 @@ private :
         }
     }
 
-    void convertPoint2fToArray(const std::vector<cv::Point2f>& points, int* arr) {
+    void convertPoint2fToArray(const std::vector<cv::Point2f>& points, int*& arr) {
         for (size_t i = 0; i < points.size(); i++) {
             arr[i * 2] = static_cast<int>(points[i].x);
             arr[i * 2 + 1] = static_cast<int>(points[i].y);
