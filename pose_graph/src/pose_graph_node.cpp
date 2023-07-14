@@ -436,8 +436,8 @@ void process()
                                    point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
                 
 
-                KeyFrame keyframe_copy(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
-                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
+                // KeyFrame keyframe_copy(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
+                //                    point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
 
                 m_process.lock();
                 start_flag = 1;
@@ -450,15 +450,16 @@ void process()
                 frame_index++;
                 last_t = T;
                 
-                std::cout << "Going to convert Keyframe into custom object" << std::endl;
+                // std::cout << "Going to convert Keyframe into custom object" << std::endl;
                 // KeyFrame keyframe_copy = *keyframe;
-                TransmitKeyFrame keyframe_dummy(keyframe_copy);
-                std::cout << "Going to serialize Keyframe" << std::endl;
+                TransmitKeyFrame keyframe_dummy(*keyframe);
+                // std::cout << "Going to serialize Keyframe" << std::endl;
                 std::string KFString(reinterpret_cast<const char*>(&keyframe_dummy), sizeof(keyframe_dummy));
                 std_msgs::String serializedKF;
                 serializedKF.data = KFString;
-                std::cout << "Going to publish keyframe" << std::endl;
+                // std::cout << "Going to publish keyframe" << std::endl;
                 keyframePublisher.publish(serializedKF);
+                std::cout << "sucessfully published keyframe with index: " << keyframe->index << std::endl;
             }
         }
 
