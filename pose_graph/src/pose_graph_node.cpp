@@ -1,5 +1,6 @@
 #include <vector>
 #include <ros/ros.h>
+#include <std_msgs/String.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <sensor_msgs/PointCloud.h>
@@ -74,6 +75,8 @@ ros::Publisher pub_match_points;
 ros::Publisher pub_camera_pose_visual;
 ros::Publisher pub_key_odometrys;
 ros::Publisher pub_vio_path;
+
+ros::Publisher keyframePublisher;
 nav_msgs::Path no_loop_path;
 
 std::string BRIEF_PATTERN_FILE;
@@ -82,11 +85,6 @@ std::string VINS_RESULT_PATH;
 CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
 Eigen::Vector3d last_t(-100, -100, -100);
 double last_image_time = -1;
-
-
-void ConnectandTransmitKeyFrame(const TransmitKeyFrame& dummy_kf);
-void transmitkeyframe(const KeyFrame& keyframe);
-
 
 void new_sequence()
 {
@@ -435,9 +433,11 @@ void process()
                 }
 
                 KeyFrame* keyframe = new KeyFrame(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
-                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence); 
-                // KeyFrame keyframe(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
-                //                    point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
+                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
+                
+
+                KeyFrame keyframe_copy(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
+                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence);
 
                 m_process.lock();
                 start_flag = 1;
@@ -449,6 +449,16 @@ void process()
                 // keyframe_buffer.pop();
                 frame_index++;
                 last_t = T;
+                
+                std::cout << "Going to convert Keyframe into custom object" << std::endl;
+                // KeyFrame keyframe_copy = *keyframe;
+                TransmitKeyFrame keyframe_dummy(keyframe_copy);
+                std::cout << "Going to serialize Keyframe" << std::endl;
+                std::string KFString(reinterpret_cast<const char*>(&keyframe_dummy), sizeof(keyframe_dummy));
+                std_msgs::String serializedKF;
+                serializedKF.data = KFString;
+                std::cout << "Going to publish keyframe" << std::endl;
+                keyframePublisher.publish(serializedKF);
             }
         }
 
@@ -481,71 +491,7 @@ void command()
     }
 }
 
-void ConnectandTransmitKeyFrame(TransmitKeyFrame& dummy_kf) {
-    // Create a socket
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket == -1) {
-        std::cerr << "Socket creation failed." << std::endl;
-        return;
-    }
 
-    // Set up the server address
-    struct sockaddr_in serverAddress{};
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(PORT);
-    serverAddress.sin_addr.s_addr = inet_addr("10.2.129.86"); // Server IP address
-
-    // Connect to the server
-    if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {
-        std::cerr << "Connection failed." << std::endl;
-        close(clientSocket);
-        return;
-    }
-
-    std::cout << "Connected to the server." << std::endl;
-
-    // Serialize the KeyFrame object
-    std::string serializedData(reinterpret_cast<const char*>(&dummy_kf), sizeof(dummy_kf));
-
-    // Send the total size of the serialized data to the server
-    size_t dataSize = serializedData.size();
-    std::cout << "Data size: " << dataSize << std::endl;
-    ssize_t bytesSent = send(clientSocket, &dataSize, sizeof(dataSize), 0);
-    if (bytesSent < 0) {
-        std::cerr << "Failed to send data size to the server." << std::endl;
-        close(clientSocket);
-        return;
-    }
-
-    // Send the serialized data to the server in chunks
-    ssize_t totalBytesSent = 0;
-    while (totalBytesSent < dataSize) {
-        ssize_t remainingBytes = dataSize - totalBytesSent;
-        ssize_t bytesToSend = BUFFER_SIZE < remainingBytes ? BUFFER_SIZE : remainingBytes;
-        bytesSent = send(clientSocket, serializedData.data() + totalBytesSent, bytesToSend, 0);
-        if (bytesSent < 0) {
-            std::cerr << "Failed to send data to the server." << std::endl;
-            close(clientSocket);
-            return;
-        }
-        totalBytesSent += bytesSent;
-    }
-
-    std::cout << "KeyFrame object sent to the server. Total Bytes sent: " << totalBytesSent << std::endl;
-    
-    // Close the client socket
-    close(clientSocket);
-
-    return;
-}
-
-void transmitkeyframe(KeyFrame& keyframe){
-    // KeyFrame keyframe;
-    TransmitKeyFrame keyframe2transmit(keyframe);
-    ConnectandTransmitKeyFrame(keyframe2transmit);
-    std::cout << "Transmitted Keyframe with index " << keyframe2transmit.index << " successfully" << std::endl;
-    return;
-}
 
 int main(int argc, char **argv)
 {
@@ -622,6 +568,8 @@ int main(int argc, char **argv)
 
     fsSettings.release();
 
+    keyframePublisher = n.advertise<std_msgs::String>("/serialized_keyframe", 10);
+
     ros::Subscriber sub_imu_forward = n.subscribe("/vins_estimator/imu_propagate", 2000, imu_forward_callback);
     ros::Subscriber sub_vio = n.subscribe("/vins_estimator/odometry", 2000, vio_callback);
     ros::Subscriber sub_image = n.subscribe(IMAGE_TOPIC, 2000, image_callback);
@@ -646,7 +594,6 @@ int main(int argc, char **argv)
     // for (auto i : keyframe_buffer){
     //     transmit_process = std::thread(transmitkeyframe(i));
     // } 
-
 
     ros::spin();
 
