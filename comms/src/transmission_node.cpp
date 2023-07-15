@@ -6,7 +6,8 @@
 #include <eigen3/Eigen/Dense>
 #include <queue>
 
-// #include "pose_graph/transmission.cpp"
+#include "pose_graph/transmission.cpp"
+// #include "pose_graph/keyframe.h"
 
 
 // Socket Programming
@@ -24,6 +25,7 @@ std::queue<std::string> KFbuffer;
 
 void ConnectandTransmitKeyFrame(const std::string& SerializedData) {
     // Create a socket
+    // std::cout << "Trying to transmit keyframe" << std:: endl;
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == -1) {
         std::cerr << "Socket creation failed." << std::endl;
@@ -87,9 +89,21 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "pose_graph");
     ros::NodeHandle n("~");
     ros::Subscriber serializedKF = n.subscribe("/serialized_keyframe", 10, keyframecallback);
-    for (int i =0; i < sizeof(KFbuffer); i++){
-        // ConnectandTransmitKeyFrame(i);
-        std::cout << "inside for loop to transmit serializedKF" << std::endl;
+    // for (int i =0; i < sizeof(KFbuffer); i++){
+    //     KFbuffer.back
+    //     ConnectandTransmitKeyFrame();
+    //     std::cout << "inside for loop to transmit serializedKF" << std::endl;
+    // }
+
+    while (ros::ok()){
+        if (!KFbuffer.empty()){
+            std::string KFdata = KFbuffer.front();
+            KFbuffer.pop();
+            ConnectandTransmitKeyFrame(KFdata);
+        }
+        else{
+            std::cout << "Buffer empty" << std::endl;
+        }
     }
     return 0;
 }

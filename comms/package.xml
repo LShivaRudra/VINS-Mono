@@ -57,6 +57,8 @@
   <exec_depend>std_msgs</exec_depend>
   <build_depend>pose_graph</build_depend>
   <exec_depend>pose_graph</exec_depend>
+  <build_depend>camera_model</build_depend>
+  <exec_depend>camera_model</exec_depend>
 
 
 

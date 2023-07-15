@@ -13,13 +13,19 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     roslib
     pose_graph
+    camera_model
     )
 
 find_package(OpenCV)
 # find_package(pose_graph REQUIRED)
 
+find_package(Ceres REQUIRED)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+find_package(Eigen3)
+
 include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS}  ${EIGEN3_INCLUDE_DIR})
-include_directories("/home/anagh/vinsws/src/VINS-Mono/pose_graph/include/pose_graph")
+# include_directories("/home/anagh/vinsws/src/VINS-Mono/pose_graph/include")
 
 catkin_package()
 

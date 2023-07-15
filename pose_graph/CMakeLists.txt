@@ -24,6 +24,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3)
 
 catkin_package(
+    INCLUDE_DIRS include
     LIBRARIES pose_graph
 )
 
@@ -68,4 +69,5 @@ install(
 install(
   DIRECTORY include/pose_graph
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
 )
