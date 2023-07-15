@@ -23,11 +23,15 @@ find_package(Ceres REQUIRED)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3)
 
+catkin_package(
+    LIBRARIES pose_graph
+)
+
 include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS}  ${EIGEN3_INCLUDE_DIR})
 
-catkin_package()
+include_directories("include")
 
-add_executable(pose_graph
+add_executable(pose_graph_node
     src/pose_graph_node.cpp
     src/pose_graph.cpp
     src/transmission.cpp
@@ -44,5 +48,24 @@ add_executable(pose_graph
     src/ThirdParty/VocabularyBinary.cpp
     )
 
+add_library(pose_graph
+    src/transmission.cpp
+    src/keyframe.cpp
+    src/pose_graph.cpp
+)
+
+target_link_libraries(pose_graph_node ${catkin_LIBRARIES}  ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
 target_link_libraries(pose_graph ${catkin_LIBRARIES}  ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
 # message("catkin_lib  ${catkin_LIBRARIES}")
+
+install(
+  TARGETS pose_graph pose_graph_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(
+  DIRECTORY include/pose_graph
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)

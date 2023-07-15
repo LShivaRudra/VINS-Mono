@@ -496,7 +496,7 @@ void command()
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "pose_graph");
+    ros::init(argc, argv, "pose_graph_node");
     ros::NodeHandle n("~");
     posegraph.registerPub(n);
 
