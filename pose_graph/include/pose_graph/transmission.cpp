@@ -51,7 +51,7 @@ public:
         }
         convertCvMatToArray(keyframe.image, imgarray);
         
-        //float** KeypointArray = new float*[];
+        // float** KeypointArray = new float*[];
 
         point3darr = new float[keyframe.point_3d.size() * 3];
         point2DuvArr = new float[keyframe.point_2d_uv.size() * 2];
@@ -92,7 +92,6 @@ public:
     int sequence;
 	
     int*** imgarray; //replaces cv::Mat
-    //int*** thumbnail;
 	
     Eigen::Vector3d vio_T_w_i; 
 	Eigen::Matrix3d vio_R_w_i; 
@@ -142,6 +141,17 @@ private :
     int image_cols;
     int image_chans;
 
+    void convertCvMatToArray(const cv::Mat& image, int***& imgarray){
+        for (int i = 0; i < image.rows; i++){
+            for (int j = 0; j < image.cols; j++){
+                cv::Vec3b pixel = image.at<cv::Vec3b>(i, j);
+                for (int k = 0; k < image.channels(); k++){
+                    imgarray[i][j][k] = pixel[k];
+                }
+            }
+        }
+    }
+
     void convertPoint3fToArray(const std::vector<cv::Point3f>& points, float*& arr) {
         for (size_t i = 0; i < points.size(); i++) {
             arr[i * 3] = static_cast<int>(points[i].x);
@@ -157,16 +167,7 @@ private :
         }
     }
 
-    void convertCvMatToArray(const cv::Mat& image, int***& imgarray){
-        for (int i = 0; i < image.rows; i++){
-            for (int j = 0; j < image.cols; j++){
-                cv::Vec3b pixel = image.at<cv::Vec3b>(i, j);
-                for (int k = 0; k < image.channels(); k++){
-                    imgarray[i][j][k] = pixel[k];
-                }
-            }
-        }
-    }
+
 
     void convertCvKeypointsToArray(const std::vector<cv::KeyPoint>& keypoints, KeypointArrayGeneral*& keypointarr){
         // for (size_t i = 0; i < keypoints.size(); ++i) {

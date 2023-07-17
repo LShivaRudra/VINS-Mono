@@ -55,33 +55,28 @@ void CreateSocketandConnect(){
 
 void TransmitKeyFrame(const std::string& KFdata){
     // Send the total size of the serialized data to the server
-    size_t dataSize = KFdata.size();
-    std::cout << "Data size: " << dataSize << std::endl;
-    ssize_t bytesSent = send(clientSocket, &dataSize, sizeof(dataSize), 0);
+    // size_t dataSize = KFdata.size();
+    // std::cout << "Data size: " << dataSize << std::endl;
+    // ssize_t bytesSent = send(clientSocket, &dataSize, sizeof(dataSize), 0);
+    // if (bytesSent < 0) {
+    //     std::cerr << "Failed to send data size to the server." << std::endl;
+    //     close(clientSocket);
+    //     return;
+    // }
+
+    // Send the serialized data to the server in chunks
+    ssize_t dataSize = KFdata.size();
+    ssize_t bytesSent = send(clientSocket, KFdata.c_str(), dataSize, 0);
     if (bytesSent < 0) {
-        std::cerr << "Failed to send data size to the server." << std::endl;
+        std::cerr << "Failed to send data to the server." << std::endl;
         close(clientSocket);
         return;
     }
 
-    // Send the serialized data to the server in chunks
-    ssize_t totalBytesSent = 0;
-    while (totalBytesSent < dataSize) {
-        ssize_t remainingBytes = dataSize - totalBytesSent;
-        ssize_t bytesToSend = BUFFER_SIZE < remainingBytes ? BUFFER_SIZE : remainingBytes;
-        bytesSent = send(clientSocket, KFdata.data() + totalBytesSent, bytesToSend, 0);
-        if (bytesSent < 0) {
-            std::cerr << "Failed to send data to the server." << std::endl;
-            close(clientSocket);
-            return;
-        }
-        totalBytesSent += bytesSent;
-    }
-
-    std::cout << "KeyFrame object sent to the server. Total Bytes sent: " << totalBytesSent << std::endl;
+    std::cout << "KeyFrame object sent to the server. Total Bytes sent: " << bytesSent << std::endl;
     
     // Close the client socket
-    close(clientSocket);
+    // close(clientSocket);
 
     return;
 }
@@ -90,8 +85,7 @@ void TransmitKeyFrame(const std::string& KFdata){
 void KFCallback(const std_msgs::String::ConstPtr& KFmsg){
     // std::cout << "inside callback" << std::endl;
     std::string KFdata = KFmsg->data;
-    // KFbuffer.push(KFdata);
-    TransmitKeyFrame(KFdata);
+    KFbuffer.push(KFdata);
     // ConnectandTransmitKeyFrame(KFdata);
 
 } 
@@ -105,26 +99,23 @@ int main(int argc, char** argv) {
     ros::Subscriber KFmsg = n.subscribe("/serialized_keyframe", 10, KFCallback);
 
 
-    // ros::AsyncSpinner spinner(1); // Create an asynchronous spinner with one thread
-    // spinner.start(); // Start the spinner
-    // uint32_t count = 0;
-    // while(ros::ok()){
-    //     count++;
-    //     // if (count<=20){
-    //     //     std::cout << "count: " << count << std::endl;
-    //     //     continue;
-    //     // }
-    //     if(count>=0 && count>20){
-    //         for (int i=0; i<KFbuffer.size(); i++){
-    //             KFdata = KFbuffer.front();
-    //             KFbuffer.pop();
-    //             TransmitKeyFrame(KFdata);
-    //        }
-    //        count=0;
-    //     }
-    // }
+    ros::AsyncSpinner spinner(1); // Create an asynchronous spinner with one thread
+    spinner.start(); // Start the spinner
 
-    // spinner.stop();
+    // u_int8_t count = 0;
+    while(ros::ok()){
+        for (int i=0; i<KFbuffer.size(); i++){
+            KFdata = KFbuffer.front();
+            KFbuffer.pop();
+            // CreateSocketandConnect();
+            TransmitKeyFrame(KFdata);
+            // close(clientSocket);
+            // std::cout << KFdata << std::endl;
+        }
+        // std::cout << "inside ros ok loop" << std::endl;
+    }
+
+    spinner.stop();
     ros::spin();
     return 0;
 }
