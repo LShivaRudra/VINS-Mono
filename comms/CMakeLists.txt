@@ -29,8 +29,13 @@ include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS}  ${EIGEN3_INCLU
 
 catkin_package()
 
-add_executable(TransmissionNode
+add_executable(ClientNode
     src/transmission_node.cpp
     )
 
-target_link_libraries(TransmissionNode ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 
+add_executable(ServerNode
+    src/server_node.cpp    
+)
+
+target_link_libraries(ClientNode ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 
+target_link_libraries(ServerNode ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 

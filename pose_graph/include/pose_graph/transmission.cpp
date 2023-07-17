@@ -1,12 +1,13 @@
 #include "keyframe.h"
 #include "pose_graph.h"
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
+
 
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
+
 
 #include <stdio.h>
 
@@ -27,6 +28,9 @@ public:
         delete[] point3darr;
         delete[] point2DuvArr;
         delete[] point2DnormArr;
+        delete[] KeypointArray;
+        delete[] KeypointNormArray;
+        delete[] KeypointWindowArray;
     }
 
     TransmitKeyFrame(KeyFrame& keyframe){
@@ -47,18 +51,30 @@ public:
         }
         convertCvMatToArray(keyframe.image, imgarray);
         
+        //float** KeypointArray = new float*[];
+
         point3darr = new float[keyframe.point_3d.size() * 3];
         point2DuvArr = new float[keyframe.point_2d_uv.size() * 2];
         point2DnormArr = new float[keyframe.point_2d_norm.size() * 2];
+
+
         convertPoint3fToArray(keyframe.point_3d, point3darr);
         convertPoint2fToArray(keyframe.point_2d_uv, point2DuvArr);
         convertPoint2fToArray(keyframe.point_2d_norm, point2DnormArr);
 
         point_id = keyframe.point_id;
 
-        // convertCvKeypointsToArray(keyframe.keypoints, KeypointArray);
-        // convertCvKeypointsToArray(keyframe.keypoints_norm, KeypointNormArray);
-        // convertCvKeypointsToArray(keyframe.window_keypoints, KeypointWindowArray);
+        kp_vec_size = keyframe.keypoints.size();
+        kp_norm_vec_size = keyframe.keypoints.size();
+        win_kp_vec_size = keyframe.keypoints.size();
+
+        KeypointArray = new KeypointArrayGeneral[kp_vec_size];
+        KeypointNormArray = new KeypointArrayGeneral[kp_norm_vec_size];
+        KeypointWindowArray = new KeypointArrayGeneral[win_kp_vec_size]; 
+
+        convertCvKeypointsToArray(keyframe.keypoints, KeypointArray);
+        convertCvKeypointsToArray(keyframe.keypoints_norm, KeypointNormArray);
+        convertCvKeypointsToArray(keyframe.window_keypoints, KeypointWindowArray);
         
         //brief desciptor conversion
         // brief_descriptors = keyframe.brief_descriptors;
@@ -76,6 +92,7 @@ public:
     int sequence;
 	
     int*** imgarray; //replaces cv::Mat
+    //int*** thumbnail;
 	
     Eigen::Vector3d vio_T_w_i; 
 	Eigen::Matrix3d vio_R_w_i; 
@@ -94,6 +111,23 @@ public:
 	// int** KeypointArray; // replaces vector<cv::KeyPoint> keypoints;
 	// int** KeypointNormArray; // replaces vector<cv::KeyPoint> keypoints_norm;
 	// int** KeypointWindowArray; // replaces vector<cv::KeyPoint> window_keypoints;
+    struct KeypointArrayGeneral{
+        float x;
+        float y;
+        float size;
+        float angle;
+        float response;
+        int octave;
+        int class_id;
+    };
+
+    int kp_vec_size;
+    int kp_norm_vec_size;
+    int win_kp_vec_size;
+
+    KeypointArrayGeneral* KeypointArray; //to replace vector<cv::KeyPoint> keypoints;
+    KeypointArrayGeneral* KeypointNormArray; //to replace vector<cv::KeyPoint> keypoints_norm;
+    KeypointArrayGeneral* KeypointWindowArray; //to replace vector<cv::KeyPoint> window_keypoints;
 
 	// vector<BRIEF::bitset> brief_descriptors;
 	// vector<BRIEF::bitset> window_brief_descriptors;
@@ -102,19 +136,6 @@ public:
 	bool has_loop;
 	int loop_index;
 	Eigen::Matrix<double, 8, 1> loop_info;
-
-
-    /* =================================POSE GRAPH INFORMATION===========================*/
-
-    // nav_msgs::Path path[10];
-    // nav_msgs::Path base_path;
-    // CameraPoseVisualization *posegraph_visualization;
-    // Vector3d t_drift;
-    // double yaw_drift;
-    // Matrix3d r_drift;
-    // Vector3d w_t_vio;
-    // Matrix3d w_r_vio;
-
 
 private :
     int image_rows;
@@ -147,10 +168,20 @@ private :
         }
     }
 
-    void convertCvKeypointsToArray(const std::vector<cv::KeyPoint>& keypoints, int** keypointArray){
-        for (size_t i = 0; i < keypoints.size(); ++i) {
-            keypointArray[i][0] = static_cast<int>(keypoints[i].pt.x);
-            keypointArray[i][1] = static_cast<int>(keypoints[i].pt.y);
+    void convertCvKeypointsToArray(const std::vector<cv::KeyPoint>& keypoints, KeypointArrayGeneral*& keypointarr){
+        // for (size_t i = 0; i < keypoints.size(); ++i) {
+        //     keypointArray[i][0] = static_cast<int>(keypoints[i].pt.x);
+        //     keypointArray[i][1] = static_cast<int>(keypoints[i].pt.y);
+        // }
+        for(size_t i = 0; i < keypoints.size(); ++i){
+            keypointarr[i].x = keypoints[i].pt.x;
+            keypointarr[i].y = keypoints[i].pt.y;
+            keypointarr[i].size = keypoints[i].size;
+            keypointarr[i].angle = keypoints[i].angle;
+            keypointarr[i].response = keypoints[i].response;
+            keypointarr[i].octave = keypoints[i].octave;
+            keypointarr[i].class_id = keypoints[i].class_id;
         }
+
     }
 };
