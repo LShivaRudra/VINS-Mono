@@ -459,7 +459,10 @@ void process()
                 serializedKF.data = KFString;
                 // std::cout << "Going to publish keyframe" << std::endl;
                 keyframePublisher.publish(serializedKF);
+                std::cout << "sucessfully published keyframe with time_stamp: " << keyframe->time_stamp << std::endl;
                 std::cout << "sucessfully published keyframe with index: " << keyframe->index << std::endl;
+                std::cout << "sucessfully published keyframe with local_index: " << keyframe->local_index << std::endl;
+                std::cout << "sucessfully published keyframe with sequence: " << keyframe->sequence << std::endl;
             }
         }
 

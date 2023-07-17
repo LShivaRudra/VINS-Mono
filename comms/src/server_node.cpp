@@ -5,12 +5,15 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
+#include "pose_graph/transmission.cpp"
 
 #define PORT 54321
 #define BUFFER_SIZE 4096
 
 int serverSocket;
 int clientSocket;
+
+ros::Publisher mod_kf_string_pub;
 
 void CreateServerSocket() {
     // Create a socket
@@ -72,6 +75,13 @@ void ReceiveStringFromClient() {
     std::string receivedString(buffer, bytesRead);
     // std::cout << "Received string from client: " << receivedString << std::endl;
 
+    // std::cout<<receivedString<<std::endl;
+    // TransmitKeyFrame keyframe_dummy;
+    // std::memcpy(&keyframe_dummy, receivedString.data(), sizeof(TransmitKeyFrame));
+    // std::cout<<keyframe_dummy.imgarray<<std::endl;
+    std_msgs::String mod_kf_string;
+    mod_kf_string.data=receivedString;
+    mod_kf_string_pub.publish(mod_kf_string);
     // Send a reply to the client
     std::string reply = "Message received by the server";
     ssize_t bytesSent = send(clientSocket, reply.c_str(), reply.length(), 0);
@@ -84,7 +94,9 @@ void ReceiveStringFromClient() {
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "ServerNode");
-    ros::NodeHandle("~");
+    ros::NodeHandle n("~");
+
+    mod_kf_string_pub = n.advertise<std_msgs::String>("/mod_kf_string_topic", 10);
 
     CreateServerSocket();
 
