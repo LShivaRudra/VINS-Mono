@@ -90,7 +90,8 @@ void TransmitKeyFrame(const std::string& KFdata){
 void KFCallback(const std_msgs::String::ConstPtr& KFmsg){
     // std::cout << "inside callback" << std::endl;
     std::string KFdata = KFmsg->data;
-    KFbuffer.push(KFdata);
+    // KFbuffer.push(KFdata);
+    TransmitKeyFrame(KFdata);
     // ConnectandTransmitKeyFrame(KFdata);
 
 } 
@@ -104,27 +105,26 @@ int main(int argc, char** argv) {
     ros::Subscriber KFmsg = n.subscribe("/serialized_keyframe", 10, KFCallback);
 
 
-    ros::AsyncSpinner spinner(1); // Create an asynchronous spinner with one thread
-    spinner.start(); // Start the spinner
+    // ros::AsyncSpinner spinner(1); // Create an asynchronous spinner with one thread
+    // spinner.start(); // Start the spinner
+    // uint32_t count = 0;
+    // while(ros::ok()){
+    //     count++;
+    //     // if (count<=20){
+    //     //     std::cout << "count: " << count << std::endl;
+    //     //     continue;
+    //     // }
+    //     if(count>=0 && count>20){
+    //         for (int i=0; i<KFbuffer.size(); i++){
+    //             KFdata = KFbuffer.front();
+    //             KFbuffer.pop();
+    //             TransmitKeyFrame(KFdata);
+    //        }
+    //        count=0;
+    //     }
+    // }
 
-    int count = 0;
-    while(ros::ok()){
-        count++;
-        if (count<=20){
-            std::cout << "count: " << count << std::endl;
-            continue;
-        }
-
-        for (int i=0; i<KFbuffer.size(); i++){
-            KFdata = KFbuffer.front();
-            KFbuffer.pop();
-            TransmitKeyFrame(KFdata);
-            // std::cout << KFdata << std::endl;
-        }
-        // std::cout << "inside ros ok loop" << std::endl;
-    }
-
-    spinner.stop();
+    // spinner.stop();
     ros::spin();
     return 0;
 }
