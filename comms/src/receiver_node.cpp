@@ -1,15 +1,14 @@
 #include <iostream>
 #include <ros/ros.h>
 #include <std_msgs/String.h>
+#include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
-// #include <opencv2/core/eigen.hpp>
+#include <opencv2/core/eigen.hpp>
 #include <eigen3/Eigen/Dense>
 #include <queue>
 
+#include "pose_graph/keyframe.h"
 #include "pose_graph/transmission.cpp"
-#include "pose_graph/ThirdParty/DVision/BRIEF.h"
-// #include "pose_graph/keyframe.h"
-
 
 // Socket Programming
 #include <sys/socket.h>
@@ -20,9 +19,16 @@
 
 // TransmitKeyFrame tkf;
 TransmitKeyFrame tkf;
+KeyFrame kf;    
 
 void cb(const std_msgs::String::ConstPtr& msg){
     std::memcpy(&tkf, msg->data.c_str(), sizeof(TransmitKeyFrame));
+    // KeyFrame *new_kf = new KeyFrame();
+
+    
+
+    // tkf.ToKeyFrame(tkf, new_kf);
+    // KeyFrame newkf = tkf.ToKeyFrame(tkf);
     // std::cout<<"The recvd timestamp: "<<tkf.time_stamp<<std::endl;
     // std::cout<<"The recvd index: "<<tkf.index<<std::endl;
     // std::cout<<"The recvd localindex: "<<tkf.local_index<<std::endl;
