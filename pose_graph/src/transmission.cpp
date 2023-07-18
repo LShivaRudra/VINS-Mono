@@ -7,7 +7,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
-
+#include "ThirdParty/DVision/BRIEF.h"
 
 #include <stdio.h>
 
@@ -50,8 +50,18 @@ public:
             }
         }
         convertCvMatToArray(keyframe.image, imgarray);
+        img_dim1 = keyframe.image.rows;
+        img_dim2 = keyframe.image.cols;
+        img_dim3 = keyframe.image.channels();
         
         //float** KeypointArray = new float*[];
+
+        vio_T_w_i = keyframe.vio_T_w_i;
+        vio_R_w_i = keyframe.vio_R_w_i;
+        T_w_i = keyframe.T_w_i;
+        R_w_i = keyframe.R_w_i;
+        origin_vio_T = keyframe.origin_vio_T;
+        origin_vio_R = keyframe.origin_vio_R;
 
         point3darr = new float[keyframe.point_3d.size() * 3];
         point2DuvArr = new float[keyframe.point_2d_uv.size() * 2];
@@ -59,8 +69,13 @@ public:
 
 
         convertPoint3fToArray(keyframe.point_3d, point3darr);
+        point3darr_num_elements = keyframe.point_3d.size();
+
         convertPoint2fToArray(keyframe.point_2d_uv, point2DuvArr);
+        point2DuvArr_num_elements = keyframe.point_2d_uv.size();
+
         convertPoint2fToArray(keyframe.point_2d_norm, point2DnormArr);
+        point2DnormArr_num_elements = keyframe.point_2d_norm.size();
 
         point_id = keyframe.point_id;
 
@@ -73,12 +88,17 @@ public:
         KeypointWindowArray = new KeypointArrayGeneral[win_kp_vec_size]; 
 
         convertCvKeypointsToArray(keyframe.keypoints, KeypointArray);
+        KeypointArray_num_elements = keyframe.keypoints.size();
+
         convertCvKeypointsToArray(keyframe.keypoints_norm, KeypointNormArray);
+        KeypointNormArray_num_elements = keyframe.keypoints_norm.size();
+
         convertCvKeypointsToArray(keyframe.window_keypoints, KeypointWindowArray);
+        KeypointWindowArray_num_elements = keyframe.window_keypoints.size();
         
         //brief desciptor conversion
-        // brief_descriptors = keyframe.brief_descriptors;
-        // window_brief_descriptors = keyframe.window_brief_descriptors;
+        brief_descriptors = keyframe.brief_descriptors;
+        window_brief_descriptors = keyframe.window_brief_descriptors;
 
         has_fast_point = keyframe.has_fast_point;
         has_loop = keyframe.has_loop;
@@ -86,12 +106,37 @@ public:
         loop_info = keyframe.loop_info;
     }
 
+    KeyFrame ToKeyFrame(TransmitKeyFrame& tkf){
+        KeyFrame kf;
+        kf.time_stamp = time_stamp;
+        kf.index = index;
+        kf.local_index = local_index;
+        kf.sequence = sequence;
+        kf.vio_T_w_i = vio_T_w_i;
+        kf.vio_R_w_i = vio_R_w_i;
+        kf.T_w_i = T_w_i;
+        kf.R_w_i = R_w_i;
+        kf.origin_vio_T = origin_vio_T;
+        kf.origin_vio_R = origin_vio_R;
+        convertArrayToPoint3f(tkf.point3darr, kf.point_3d);
+        convertArrayToPoint2f();
+        convertArrayToPoint2f();
+        convertArrayToKeypoints();
+        convertArrayToCvMat();
+    }
+
+
+
     double time_stamp; 
 	int index;
 	int local_index;
     int sequence;
 	
     int*** imgarray; //replaces cv::Mat
+    int img_dim1;
+    int img_dim2;
+    int img_dim3;
+    
     //int*** thumbnail;
 	
     Eigen::Vector3d vio_T_w_i; 
@@ -102,11 +147,15 @@ public:
 	Eigen::Matrix3d origin_vio_R;
 
     float* point3darr;  //replaces vector<cv::Point3f> point_3d
+    size_t point3darr_num_elements;
+
 	float* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
+    size_t point2DuvArr_num_elements;
+
 	float* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
+    size_t point2DnormArr_num_elements;
 
 	vector<double> point_id;
-
     
 	// int** KeypointArray; // replaces vector<cv::KeyPoint> keypoints;
 	// int** KeypointNormArray; // replaces vector<cv::KeyPoint> keypoints_norm;
@@ -126,11 +175,16 @@ public:
     int win_kp_vec_size;
 
     KeypointArrayGeneral* KeypointArray; //to replace vector<cv::KeyPoint> keypoints;
-    KeypointArrayGeneral* KeypointNormArray; //to replace vector<cv::KeyPoint> keypoints_norm;
-    KeypointArrayGeneral* KeypointWindowArray; //to replace vector<cv::KeyPoint> window_keypoints;
+    size_t KeypointArray_num_elements;
 
-	// vector<BRIEF::bitset> brief_descriptors;
-	// vector<BRIEF::bitset> window_brief_descriptors;
+    KeypointArrayGeneral* KeypointNormArray; //to replace vector<cv::KeyPoint> keypoints_norm;
+    size_t KeypointNormArray_num_elements;
+
+    KeypointArrayGeneral* KeypointWindowArray; //to replace vector<cv::KeyPoint> window_keypoints;
+    size_t KeypointWindowArray_num_elements;
+
+	vector<BRIEF::bitset> brief_descriptors;
+	vector<BRIEF::bitset> window_brief_descriptors;
     
 	bool has_fast_point;
 	bool has_loop;
@@ -183,5 +237,9 @@ private :
             keypointarr[i].class_id = keypoints[i].class_id;
         }
 
+    }
+
+    void convertArrayToPoint3f(const ){
+        
     }
 };

@@ -463,6 +463,10 @@ void process()
                 std::cout << "sucessfully published keyframe with index: " << keyframe->index << std::endl;
                 std::cout << "sucessfully published keyframe with local_index: " << keyframe->local_index << std::endl;
                 std::cout << "sucessfully published keyframe with sequence: " << keyframe->sequence << std::endl;
+
+                std::cout<<"Img dims1 in modkf: "<<keyframe->image.rows<<std::endl;
+                std::cout<<"Img dims2 in modkf: "<<keyframe->image.cols<<std::endl;
+                std::cout<<"Img dims3 in modkf: "<<keyframe->image.channels()<<std::endl;
             }
         }
 
