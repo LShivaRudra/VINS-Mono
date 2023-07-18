@@ -53,6 +53,7 @@ add_library(pose_graph
     src/transmission.cpp
     src/keyframe.cpp
     src/pose_graph.cpp
+    src/ThirdParty/DVision/BRIEF.cpp
 )
 
 target_link_libraries(pose_graph_node ${catkin_LIBRARIES}  ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
