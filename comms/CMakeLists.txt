@@ -37,10 +37,10 @@ add_executable(ServerNode
     src/server_node.cpp    
 )
 
-add_executable(receiver_node
-    src/receiver_node.cpp
-)
+# add_executable(receiver_node
+#     src/receiver_node.cpp
+# )
 
 target_link_libraries(ClientNode ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 
 target_link_libraries(ServerNode ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 
-target_link_libraries(receiver_node ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 
+# target_link_libraries(receiver_node ${catkin_LIBRARIES}  ${OpenCV_LIBS}) 

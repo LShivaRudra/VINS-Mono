@@ -41,9 +41,9 @@ queue<sensor_msgs::ImageConstPtr> image_buf;
 queue<sensor_msgs::PointCloudConstPtr> point_buf;
 queue<nav_msgs::Odometry::ConstPtr> pose_buf;
 queue<Eigen::Vector3d> odometry_buf;
+// queue<TransmitKeyFrame> extkf_buf;
 
-
-queue<TransmitKeyFrame> keyframe_buffer;
+queue<KeyFrame> keyframe_buf;
 
 
 std::mutex m_buf;
@@ -85,6 +85,8 @@ std::string VINS_RESULT_PATH;
 CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
 Eigen::Vector3d last_t(-100, -100, -100);
 double last_image_time = -1;
+
+TransmitKeyFrame *exttkf;
 
 void new_sequence()
 {
@@ -312,6 +314,33 @@ void extrinsic_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
     m_process.unlock();
 }
 
+void extkf_callback(const std_msgs::String::ConstPtr& msg){
+    m_process.lock();
+    TransmitKeyFrame *exttkf_ptr = new TransmitKeyFrame();
+    std::memcpy(exttkf_ptr, msg->data.c_str(), sizeof(TransmitKeyFrame));
+    // KeyFrame *external_kf_ptr = new KeyFrame();
+
+    // try{
+    //     KeyFrame* external_kf_ptr = new KeyFrame();
+    //     *external_kf_ptr = (exttkf_ptr->ToKeyFrame());
+    //     // add to buffer
+    //     std::cout << "Processed external Keyframe with index: " << external_kf_ptr->index << std::endl;
+    //     delete external_kf_ptr;
+    // } catch(const std::exception& e){
+    //     std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
+    // }
+
+
+    // delete external_kf_ptr;
+
+
+    /* Uncommenting this kills the pose_graph_node for no discernable reason
+    delete exttkf_ptr;     
+    */  
+    m_process.unlock();
+    return;
+}
+
 void process()
 {
     if (!LOOP_CLOSURE)
@@ -459,14 +488,14 @@ void process()
                 serializedKF.data = KFString;
                 // std::cout << "Going to publish keyframe" << std::endl;
                 keyframePublisher.publish(serializedKF);
-                std::cout << "sucessfully published keyframe with time_stamp: " << keyframe->time_stamp << std::endl;
+                // std::cout << "sucessfully published keyframe with time_stamp: " << keyframe->time_stamp << std::endl;
                 std::cout << "sucessfully published keyframe with index: " << keyframe->index << std::endl;
-                std::cout << "sucessfully published keyframe with local_index: " << keyframe->local_index << std::endl;
-                std::cout << "sucessfully published keyframe with sequence: " << keyframe->sequence << std::endl;
+                // std::cout << "sucessfully published keyframe with local_index: " << keyframe->local_index << std::endl;
+                // std::cout << "sucessfully published keyframe with sequence: " << keyframe->sequence << std::endl;
 
-                std::cout<<"Img dims1 in modkf: "<<keyframe->image.rows<<std::endl;
-                std::cout<<"Img dims2 in modkf: "<<keyframe->image.cols<<std::endl;
-                std::cout<<"Img dims3 in modkf: "<<keyframe->image.channels()<<std::endl;
+                // std::cout<<"Img dims1 in modkf: "<<keyframe->image.rows<<std::endl;
+                // std::cout<<"Img dims2 in modkf: "<<keyframe->image.cols<<std::endl;
+                // std::cout<<"Img dims3 in modkf: "<<keyframe->image.channels()<<std::endl;
             }
         }
 
@@ -499,7 +528,23 @@ void command()
     }
 }
 
+void externalkfprocess(){
+    // KeyFrame *externalkf = new KeyFrame();
+    while(true){
+        // std::cout << "in new thread" << std::endl;
+        try{
+            KeyFrame *external_kf_ptr = new KeyFrame();
+            *external_kf_ptr = exttkf->ToKeyFrame();
+            std::cout << "converted tfk to kf with index: " << external_kf_ptr->index << std::endl;
+            // delete external_kf;
+            // delete exttkf;
+        } catch(const std::exception& e){
+            std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
+        }
 
+
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -586,6 +631,8 @@ int main(int argc, char **argv)
     ros::Subscriber sub_point = n.subscribe("/vins_estimator/keyframe_point", 2000, point_callback);
     ros::Subscriber sub_relo_relative_pose = n.subscribe("/vins_estimator/relo_relative_pose", 2000, relo_relative_pose_callback);
 
+    ros::Subscriber sub_external_kf = n.subscribe("/mod_kf_string_topic", 10, extkf_callback);
+
     pub_match_img = n.advertise<sensor_msgs::Image>("match_image", 1000);
     pub_camera_pose_visual = n.advertise<visualization_msgs::MarkerArray>("camera_pose_visual", 1000);
     pub_key_odometrys = n.advertise<visualization_msgs::Marker>("key_odometrys", 1000);
@@ -594,14 +641,11 @@ int main(int argc, char **argv)
 
     std::thread measurement_process;
     std::thread keyboard_command_process;
-    // std::thread transmit_process;
+    std::thread extKeyFrame_process;
 
     measurement_process = std::thread(process);
     keyboard_command_process = std::thread(command);
-
-    // for (auto i : keyframe_buffer){
-    //     transmit_process = std::thread(transmitkeyframe(i));
-    // } 
+    extKeyFrame_process = std::thread(externalkfprocess);
 
     ros::spin();
 
