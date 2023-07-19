@@ -240,13 +240,13 @@ public:
     }
 
     void convertArrayToCvMat(int*** imgarray, int rows, int cols, int channels, cv::Mat& image) {
-        image.create(rows, cols, CV_8UC3); // Create an empty 8-bit 3-channel color image
+        // image.create(rows, cols, CV_8UC3); // Create an empty 8-bit 3-channel color image
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 cv::Vec3b pixel;
                 for (int k = 0; k < channels; k++) {
-                    pixel[k] = static_cast<uchar>(imgarray[i][j][k]);
+                    pixel[k] = (imgarray[i][j][k]);
                 }
                 image.at<cv::Vec3b>(i, j) = pixel;
             }

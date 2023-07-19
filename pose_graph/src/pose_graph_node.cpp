@@ -315,27 +315,66 @@ void extrinsic_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
     m_process.unlock();
 }
 
+void ConvertToKeyFrame(KeyFrame* keyframe, TransmitKeyFrame* transmitKeyFrame) {
+    keyframe->time_stamp = transmitKeyFrame->time_stamp;
+    keyframe->index = transmitKeyFrame->index;
+    keyframe->local_index = transmitKeyFrame->local_index;
+    keyframe->sequence = transmitKeyFrame->sequence;
+    // keyframe->brief_descriptors = transmitKeyFrame.brief_descriptors;
+    // keyframe->window_brief_descriptors = transmitKeyFrame.window_brief_descriptors;
+    keyframe->has_fast_point = transmitKeyFrame->has_fast_point;
+    keyframe->has_loop = transmitKeyFrame->has_loop;
+    keyframe->loop_index = transmitKeyFrame->loop_index;
+    keyframe->loop_info = transmitKeyFrame->loop_info;
 
-KeyFrame ConvertToKeyFrame(TransmitKeyFrame& transmitKeyFrame) {
-    // Convert imgarray back to cv::Mat
-    // cv::Mat image;
-    // int*** imgarray = transmitKeyFrame.imgarray;
-    // int rows = transmitKeyFrame.img_dim1;
-    // int cols = transmitKeyFrame.img_dim2;
-    // int channels = transmitKeyFrame.img_dim3;
-    // transmitKeyFrame.convertArrayToCvMat(imgarray, rows, cols, channels, image);
+    // Convert Image back to Cv::Mat
 
-    // // Convert point3darr back to std::vector<cv::Point3f>
-    // float* point3darr = transmitKeyFrame.point3darr;
-    // size_t point3darr_num_elements = transmitKeyFrame.point3darr_num_elements;
-    // std::vector<cv::Point3f> point_3d;
-    // transmitKeyFrame.convertArrayToPoint3f(point3darr, point3darr_num_elements, point_3d);
+    int rows = transmitKeyFrame->image_rows;
+    int cols = transmitKeyFrame->image_cols;
+    int channels = transmitKeyFrame->image_chans;
+    // try{
+    //     cv::Mat newimage;
+    //     for (int i = 0; i < rows; i++) {
+    //         for (int j = 0; j < cols; j++) {
+    //             cv::Vec3b pixel;
+    //             for (int k = 0; k < channels; k++) {
+    //                 pixel[k] = (transmitKeyFrame.imgarray[i][j][k]);
+    //             }
+    //             newimage.at<cv::Vec3b>(i, j) = pixel;
+    //         }
+    //     }
+    //     // transmitKeyFrame.convertArrayToCvMat(transmitKeyFrame.imgarray, transmitKeyFrame.image_rows, transmitKeyFrame.image_cols, transmitKeyFrame.image_chans, newimage);
+    //     keyframe->image = newimage;
+    // } catch(const std::exception& e){
+    //     std::cerr << "Error processing Cv::Mat in external KeyFrame: " << e.what() << std::endl;
+    // }
 
-    // // Convert point2DuvArr back to std::vector<cv::Point2f>
-    // float* point2DuvArr = transmitKeyFrame.point2DuvArr;
-    // size_t point2DuvArr_num_elements = transmitKeyFrame.point2DuvArr_num_elements;
-    // std::vector<cv::Point2f> point_2d_uv;
-    // transmitKeyFrame.convertArrayToPoint2f(point2DuvArr, point2DuvArr_num_elements, point_2d_uv);
+    // Convert point3darr back to std::vector<cv::Point3f>
+    // try{
+    //     float* point3darr = transmitKeyFrame.point3darr;
+    //     size_t point3darr_num_elements = transmitKeyFrame.point3darr_num_elements;
+    //     std::vector<cv::Point3f> point_3d;
+    //     transmitKeyFrame.convertArrayToPoint3f(point3darr, point3darr_num_elements, point_3d);
+    //     keyframe.point_3d = point_3d;
+    // }catch(const std::exception& e){
+    //     std::cerr << "Error processing Cv::Point3f in external KeyFrame: " << e.what() << std::endl;
+    // }
+
+    // try{
+    //     float* point2DuvArr = transmitKeyFrame.point2DuvArr;
+    //     size_t point2DuvArr_num_elements = transmitKeyFrame.point2DuvArr_num_elements;
+    //     std::vector<cv::Point2f> point_2d_uv;
+    //     transmitKeyFrame.convertArrayToPoint2f(point2DuvArr, point2DuvArr_num_elements, point_2d_uv);
+    //     keyframe.point_2d_uv = point_2d_uv;
+
+    //     float* point2DnormArr = transmitKeyFrame.point2DnormArr;
+    //     size_t point2DnormArr_num_elements = transmitKeyFrame.point2DnormArr_num_elements;
+    //     std::vector<cv::Point2f> point_2d_norm;
+    //     transmitKeyFrame.convertArrayToPoint2f(point2DnormArr, point2DnormArr_num_elements, point_2d_norm);
+    //     keyframe.point_2d_norm = point_2d_norm;
+    // }catch(const std::exception& e){
+    //     std::cerr << "Error processing Cv::Point2f in external KeyFrame: " << e.what() << std::endl;
+    // }
 
     // // Convert KeypointArray back to std::vector<cv::KeyPoint>
     // TransmitKeyFrame::KeypointArrayGeneral* keypointArray = transmitKeyFrame.KeypointArray;
@@ -343,19 +382,8 @@ KeyFrame ConvertToKeyFrame(TransmitKeyFrame& transmitKeyFrame) {
     // std::vector<cv::KeyPoint> keypoints;
     // transmitKeyFrame.convertArrayToCvKeypoints(keypointArray, KeypointArray_num_elements, keypoints);
 
-    // Now create a KeyFrame object and populate it with the converted data
-    KeyFrame keyframe;
-    keyframe.time_stamp = transmitKeyFrame.time_stamp;
-    keyframe.index = transmitKeyFrame.index;
-    keyframe.local_index = transmitKeyFrame.local_index;
-    keyframe.sequence = transmitKeyFrame.sequence;
-    // keyframe.image = image;
-    // keyframe.point_3d = point_3d;
-    // keyframe.point_2d_uv = point_2d_uv;
-    // keyframe.keypoints = keypoints;
-    // ... populate the rest of the KeyFrame object with the remaining data
-
-    return keyframe;
+ 
+    // return keyframe;
 }
 
 void extkf_callback(const std_msgs::String::ConstPtr& msg){
@@ -368,12 +396,12 @@ void extkf_callback(const std_msgs::String::ConstPtr& msg){
     try{
         KeyFrame *external_kf_ptr = new KeyFrame();
         // *external_kf_ptr = exttkf->ToKeyFrame(*exttkf);
-        *external_kf_ptr = ConvertToKeyFrame(*exttkf_ptr);
+        ConvertToKeyFrame(external_kf_ptr, exttkf_ptr);
         std::cout << "converted tfk to kf with index: " << external_kf_ptr->index << std::endl;
         // delete external_kf;
         // delete exttkf;
     } catch(const std::exception& e){
-        std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
+        std::cerr << "Error processing Main external KeyFrame: " << e.what() << std::endl;
     }
 
 
@@ -524,9 +552,9 @@ void process()
                 
                 // std::cout << "Going to convert Keyframe into custom object" << std::endl;
                 // KeyFrame keyframe_copy = *keyframe;
-                TransmitKeyFrame keyframe_dummy(*keyframe);
+                TransmitKeyFrame* keyframe_dummy = new TransmitKeyFrame(*keyframe);
                 // std::cout << "Going to serialize Keyframe" << std::endl;
-                std::string KFString(reinterpret_cast<const char*>(&keyframe_dummy), sizeof(keyframe_dummy));
+                std::string KFString(reinterpret_cast<const char*>(keyframe_dummy), sizeof(TransmitKeyFrame));
                 std_msgs::String serializedKF;
                 serializedKF.data = KFString;
                 // std::cout << "Going to publish keyframe" << std::endl;
