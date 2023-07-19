@@ -50,6 +50,9 @@ public:
             }
         }
         convertCvMatToArray(keyframe.image, imgarray);
+        img_dim1 = keyframe.image.rows;
+        img_dim2 = keyframe.image.cols;
+        img_dim3 = keyframe.image.channels();
         
         //float** KeypointArray = new float*[];
 
@@ -66,8 +69,13 @@ public:
 
 
         convertPoint3fToArray(keyframe.point_3d, point3darr);
+        point3darr_num_elements = keyframe.point_3d.size();
+
         convertPoint2fToArray(keyframe.point_2d_uv, point2DuvArr);
+        point2DuvArr_num_elements = keyframe.point_2d_uv.size();
+
         convertPoint2fToArray(keyframe.point_2d_norm, point2DnormArr);
+        point2DnormArr_num_elements = keyframe.point_2d_norm.size();
 
         point_id = keyframe.point_id;
 
@@ -80,8 +88,13 @@ public:
         KeypointWindowArray = new KeypointArrayGeneral[win_kp_vec_size]; 
 
         convertCvKeypointsToArray(keyframe.keypoints, KeypointArray);
+        KeypointArray_num_elements = keyframe.keypoints.size();
+
         convertCvKeypointsToArray(keyframe.keypoints_norm, KeypointNormArray);
+        KeypointNormArray_num_elements = keyframe.keypoints_norm.size();
+
         convertCvKeypointsToArray(keyframe.window_keypoints, KeypointWindowArray);
+        KeypointWindowArray_num_elements = keyframe.window_keypoints.size();
         
         //brief desciptor conversion
         brief_descriptors = keyframe.brief_descriptors;
@@ -93,12 +106,41 @@ public:
         loop_info = keyframe.loop_info;
     }
 
+    KeyFrame ToKeyFrame(TransmitKeyFrame& tkf, KeyFrame& kf){
+        // KeyFrame kf();
+        kf.time_stamp = tkf.time_stamp;
+        kf.index = tkf.index;
+        kf.local_index = tkf.local_index;
+        kf.sequence = tkf.sequence;
+        kf.vio_T_w_i = tkf.vio_T_w_i;
+        kf.vio_R_w_i = tkf.vio_R_w_i;
+        kf.T_w_i = tkf.T_w_i;
+        kf.R_w_i = tkf.R_w_i;
+        kf.origin_vio_T = tkf.origin_vio_T;
+        kf.origin_vio_R = tkf.origin_vio_R;
+        convertArrayToPoint3f(tkf.point3darr, tkf.point3darr_num_elements, kf.point_3d);
+        convertArrayToPoint2f(tkf.point2DnormArr, tkf.point2DnormArr_num_elements, kf.point_2d_norm);
+        convertArrayToPoint2f(tkf.point2DuvArr, tkf.point2DuvArr_num_elements, kf.point_2d_uv);
+        convertArrayToCvKeypoints(tkf.KeypointArray, tkf.KeypointArray_num_elements, kf.keypoints);
+        convertArrayToCvKeypoints(tkf.KeypointNormArray, tkf.KeypointNormArray_num_elements, kf.keypoints_norm);
+        convertArrayToCvKeypoints(tkf.KeypointWindowArray, tkf.KeypointWindowArray_num_elements, kf.window_keypoints);
+        convertArrayToCvMat(tkf.imgarray, tkf.img_dim1, tkf.img_dim2, tkf.img_dim3, kf.image);
+
+        // return kf();
+    }
+
+
+
     double time_stamp; 
 	int index;
 	int local_index;
     int sequence;
 	
     int*** imgarray; //replaces cv::Mat
+    int img_dim1;
+    int img_dim2;
+    int img_dim3;
+    
     //int*** thumbnail;
 	
     Eigen::Vector3d vio_T_w_i; 
@@ -109,11 +151,15 @@ public:
 	Eigen::Matrix3d origin_vio_R;
 
     float* point3darr;  //replaces vector<cv::Point3f> point_3d
+    size_t point3darr_num_elements;
+
 	float* point2DuvArr; //replaces vector<cv::Point2f> point_2d_uv;
+    size_t point2DuvArr_num_elements;
+
 	float* point2DnormArr; //vector<cv::Point2f> point_2d_norm;
+    size_t point2DnormArr_num_elements;
 
 	vector<double> point_id;
-
     
 	// int** KeypointArray; // replaces vector<cv::KeyPoint> keypoints;
 	// int** KeypointNormArray; // replaces vector<cv::KeyPoint> keypoints_norm;
@@ -133,8 +179,13 @@ public:
     int win_kp_vec_size;
 
     KeypointArrayGeneral* KeypointArray; //to replace vector<cv::KeyPoint> keypoints;
+    size_t KeypointArray_num_elements;
+
     KeypointArrayGeneral* KeypointNormArray; //to replace vector<cv::KeyPoint> keypoints_norm;
+    size_t KeypointNormArray_num_elements;
+
     KeypointArrayGeneral* KeypointWindowArray; //to replace vector<cv::KeyPoint> window_keypoints;
+    size_t KeypointWindowArray_num_elements;
 
 	vector<BRIEF::bitset> brief_descriptors;
 	vector<BRIEF::bitset> window_brief_descriptors;
@@ -176,10 +227,6 @@ private :
     }
 
     void convertCvKeypointsToArray(const std::vector<cv::KeyPoint>& keypoints, KeypointArrayGeneral*& keypointarr){
-        // for (size_t i = 0; i < keypoints.size(); ++i) {
-        //     keypointArray[i][0] = static_cast<int>(keypoints[i].pt.x);
-        //     keypointArray[i][1] = static_cast<int>(keypoints[i].pt.y);
-        // }
         for(size_t i = 0; i < keypoints.size(); ++i){
             keypointarr[i].x = keypoints[i].pt.x;
             keypointarr[i].y = keypoints[i].pt.y;
@@ -192,57 +239,58 @@ private :
 
     }
 
-    /*
-    Converting TransmitKeyFrame back to KeyFrame object
-    */
+    void convertArrayToPoint3f(float* arr, size_t arrSize, std::vector<cv::Point3f>& points) {
+        size_t numPoints = arrSize / 3; // Divide by 3 since each point occupies 3 elements in the array
+        points.clear(); // Clear the existing points vector to avoid appending new data to it
 
-    cv::Mat convertArrayToCvMat(int*** imgarray, int rows, int cols, int chans) {
-        cv::Mat image(rows, cols, CV_8UC(chans));
+        for (size_t i = 0; i < numPoints; i++) {
+            cv::Point3f point;
+            point.x = static_cast<float>(arr[i * 3]);
+            point.y = static_cast<float>(arr[i * 3 + 1]);
+            point.z = static_cast<float>(arr[i * 3 + 2]);
+            points.push_back(point);
+        }
+    }
+
+    void convertArrayToPoint2f(float* arr, size_t arrSize, std::vector<cv::Point2f>& points) {
+        size_t numPoints = arrSize / 2; // Divide by 2 since each point occupies 2 elements in the array
+        points.clear(); // Clear the existing points vector to avoid appending new data to it
+
+        for (size_t i = 0; i < numPoints; i++) {
+            cv::Point2f point;
+            point.x = static_cast<float>(arr[i * 2]);
+            point.y = static_cast<float>(arr[i * 2 + 1]);
+            points.push_back(point);
+        }
+    }
+
+    void convertArrayToCvMat(int*** imgarray, int rows, int cols, int channels, cv::Mat& image) {
+        image.create(rows, cols, CV_8UC3); // Create an empty 8-bit 3-channel color image
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 cv::Vec3b pixel;
-                for (int k = 0; k < chans; k++) {
-                    pixel[k] = imgarray[i][j][k];
+                for (int k = 0; k < channels; k++) {
+                    pixel[k] = static_cast<uchar>(imgarray[i][j][k]);
                 }
                 image.at<cv::Vec3b>(i, j) = pixel;
             }
         }
-
-        return image;
-    }
-    
-    std::vector<cv::Point3f> convertArrayToPoint3f(float* arr, int size) {
-        std::vector<cv::Point3f> points;
-
-        for (int i = 0; i < size; i += 3) {
-            cv::Point3f point(arr[i], arr[i + 1], arr[i + 2]);
-            points.push_back(point);
-        }
-
-        return points;
     }
 
-    // Convert float array to vector<cv::Point2f>
-    std::vector<cv::Point2f> convertArrayToPoint2f(float* arr, int size) {
-        std::vector<cv::Point2f> points;
+    void convertArrayToCvKeypoints(KeypointArrayGeneral* keypointarr, size_t arrSize, std::vector<cv::KeyPoint>& keypoints) {
+        keypoints.clear(); // Clear the existing keypoints vector to avoid appending new data to it
 
-        for (int i = 0; i < size; i += 2) {
-            cv::Point2f point(arr[i], arr[i + 1]);
-            points.push_back(point);
-        }
-
-        return points;
-    }
-
-    // Convert KeypointArrayGeneral array to vector<cv::KeyPoint>
-    std::vector<cv::KeyPoint> convertArrayToCvKeypoints(TransmitKeyFrame::KeypointArrayGeneral* keypointarr, int size) {
-        std::vector<cv::KeyPoint> keypoints;
-
-        for (int i = 0; i < size; i++) {
-            cv::KeyPoint keypoint(keypointarr[i].x, keypointarr[i].y, keypointarr[i].size, keypointarr[i].angle, keypointarr[i].response, keypointarr[i].octave, keypointarr[i].class_id);
+        for (size_t i = 0; i < arrSize; ++i) {
+            cv::KeyPoint keypoint;
+            keypoint.pt.x = keypointarr[i].x;
+            keypoint.pt.y = keypointarr[i].y;
+            keypoint.size = keypointarr[i].size;
+            keypoint.angle = keypointarr[i].angle;
+            keypoint.response = keypointarr[i].response;
+            keypoint.octave = keypointarr[i].octave;
+            keypoint.class_id = keypointarr[i].class_id;
             keypoints.push_back(keypoint);
         }
-
-        return keypoints;
     }
 };
