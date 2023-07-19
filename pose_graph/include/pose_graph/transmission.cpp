@@ -106,30 +106,6 @@ public:
         loop_info = keyframe.loop_info;
     }
 
-    KeyFrame ToKeyFrame(TransmitKeyFrame& tkf, KeyFrame& kf){
-        // KeyFrame kf();
-        kf.time_stamp = tkf.time_stamp;
-        kf.index = tkf.index;
-        kf.local_index = tkf.local_index;
-        kf.sequence = tkf.sequence;
-        kf.vio_T_w_i = tkf.vio_T_w_i;
-        kf.vio_R_w_i = tkf.vio_R_w_i;
-        kf.T_w_i = tkf.T_w_i;
-        kf.R_w_i = tkf.R_w_i;
-        kf.origin_vio_T = tkf.origin_vio_T;
-        kf.origin_vio_R = tkf.origin_vio_R;
-        convertArrayToPoint3f(tkf.point3darr, tkf.point3darr_num_elements, kf.point_3d);
-        convertArrayToPoint2f(tkf.point2DnormArr, tkf.point2DnormArr_num_elements, kf.point_2d_norm);
-        convertArrayToPoint2f(tkf.point2DuvArr, tkf.point2DuvArr_num_elements, kf.point_2d_uv);
-        convertArrayToCvKeypoints(tkf.KeypointArray, tkf.KeypointArray_num_elements, kf.keypoints);
-        convertArrayToCvKeypoints(tkf.KeypointNormArray, tkf.KeypointNormArray_num_elements, kf.keypoints_norm);
-        convertArrayToCvKeypoints(tkf.KeypointWindowArray, tkf.KeypointWindowArray_num_elements, kf.window_keypoints);
-        convertArrayToCvMat(tkf.imgarray, tkf.img_dim1, tkf.img_dim2, tkf.img_dim3, kf.image);
-
-        // return kf();
-    }
-
-
 
     double time_stamp; 
 	int index;
@@ -195,10 +171,10 @@ public:
 	int loop_index;
 	Eigen::Matrix<double, 8, 1> loop_info;
 
-private :
     int image_rows;
     int image_cols;
     int image_chans;
+
 
     void convertPoint3fToArray(const std::vector<cv::Point3f>& points, float*& arr) {
         for (size_t i = 0; i < points.size(); i++) {

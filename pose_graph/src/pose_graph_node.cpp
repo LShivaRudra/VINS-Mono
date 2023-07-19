@@ -87,6 +87,7 @@ Eigen::Vector3d last_t(-100, -100, -100);
 double last_image_time = -1;
 
 TransmitKeyFrame *exttkf;
+bool entered = false;
 
 void new_sequence()
 {
@@ -314,24 +315,66 @@ void extrinsic_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
     m_process.unlock();
 }
 
+
+KeyFrame ConvertToKeyFrame(TransmitKeyFrame& transmitKeyFrame) {
+    // Convert imgarray back to cv::Mat
+    // cv::Mat image;
+    // int*** imgarray = transmitKeyFrame.imgarray;
+    // int rows = transmitKeyFrame.img_dim1;
+    // int cols = transmitKeyFrame.img_dim2;
+    // int channels = transmitKeyFrame.img_dim3;
+    // transmitKeyFrame.convertArrayToCvMat(imgarray, rows, cols, channels, image);
+
+    // // Convert point3darr back to std::vector<cv::Point3f>
+    // float* point3darr = transmitKeyFrame.point3darr;
+    // size_t point3darr_num_elements = transmitKeyFrame.point3darr_num_elements;
+    // std::vector<cv::Point3f> point_3d;
+    // transmitKeyFrame.convertArrayToPoint3f(point3darr, point3darr_num_elements, point_3d);
+
+    // // Convert point2DuvArr back to std::vector<cv::Point2f>
+    // float* point2DuvArr = transmitKeyFrame.point2DuvArr;
+    // size_t point2DuvArr_num_elements = transmitKeyFrame.point2DuvArr_num_elements;
+    // std::vector<cv::Point2f> point_2d_uv;
+    // transmitKeyFrame.convertArrayToPoint2f(point2DuvArr, point2DuvArr_num_elements, point_2d_uv);
+
+    // // Convert KeypointArray back to std::vector<cv::KeyPoint>
+    // TransmitKeyFrame::KeypointArrayGeneral* keypointArray = transmitKeyFrame.KeypointArray;
+    // size_t KeypointArray_num_elements = transmitKeyFrame.KeypointArray_num_elements;
+    // std::vector<cv::KeyPoint> keypoints;
+    // transmitKeyFrame.convertArrayToCvKeypoints(keypointArray, KeypointArray_num_elements, keypoints);
+
+    // Now create a KeyFrame object and populate it with the converted data
+    KeyFrame keyframe;
+    keyframe.time_stamp = transmitKeyFrame.time_stamp;
+    keyframe.index = transmitKeyFrame.index;
+    keyframe.local_index = transmitKeyFrame.local_index;
+    keyframe.sequence = transmitKeyFrame.sequence;
+    // keyframe.image = image;
+    // keyframe.point_3d = point_3d;
+    // keyframe.point_2d_uv = point_2d_uv;
+    // keyframe.keypoints = keypoints;
+    // ... populate the rest of the KeyFrame object with the remaining data
+
+    return keyframe;
+}
+
 void extkf_callback(const std_msgs::String::ConstPtr& msg){
+    entered = true;
     m_process.lock();
     TransmitKeyFrame *exttkf_ptr = new TransmitKeyFrame();
     std::memcpy(exttkf_ptr, msg->data.c_str(), sizeof(TransmitKeyFrame));
     // KeyFrame *external_kf_ptr = new KeyFrame();
 
-    // try{
-    //     KeyFrame* external_kf_ptr = new KeyFrame();
-    //     *external_kf_ptr = (exttkf_ptr->ToKeyFrame());
-    //     // add to buffer
-    //     std::cout << "Processed external Keyframe with index: " << external_kf_ptr->index << std::endl;
-    //     delete external_kf_ptr;
-    // } catch(const std::exception& e){
-    //     std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
-    // }
-
-
-    // delete external_kf_ptr;
+    try{
+        KeyFrame *external_kf_ptr = new KeyFrame();
+        // *external_kf_ptr = exttkf->ToKeyFrame(*exttkf);
+        *external_kf_ptr = ConvertToKeyFrame(*exttkf_ptr);
+        std::cout << "converted tfk to kf with index: " << external_kf_ptr->index << std::endl;
+        // delete external_kf;
+        // delete exttkf;
+    } catch(const std::exception& e){
+        std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
+    }
 
 
     /* Uncommenting this kills the pose_graph_node for no discernable reason
@@ -532,17 +575,9 @@ void externalkfprocess(){
     // KeyFrame *externalkf = new KeyFrame();
     while(true){
         // std::cout << "in new thread" << std::endl;
-        try{
-            KeyFrame *external_kf_ptr = new KeyFrame();
-            *external_kf_ptr = exttkf->ToKeyFrame();
-            std::cout << "converted tfk to kf with index: " << external_kf_ptr->index << std::endl;
-            // delete external_kf;
-            // delete exttkf;
-        } catch(const std::exception& e){
-            std::cerr << "Error processing external KeyFrame: " << e.what() << std::endl;
+        if (entered == true){
+            
         }
-
-
     }
 }
 
@@ -641,11 +676,11 @@ int main(int argc, char **argv)
 
     std::thread measurement_process;
     std::thread keyboard_command_process;
-    std::thread extKeyFrame_process;
+    // std::thread extKeyFrame_process;
 
     measurement_process = std::thread(process);
     keyboard_command_process = std::thread(command);
-    extKeyFrame_process = std::thread(externalkfprocess);
+    // extKeyFrame_process = std::thread(externalkfprocess);
 
     ros::spin();
 

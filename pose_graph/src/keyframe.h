@@ -12,6 +12,7 @@
 #include "parameters.h"
 #include "ThirdParty/DBoW/DBoW2.h"
 #include "ThirdParty/DVision/DVision.h"
+// #include "transmission.cpp"
 
 #define MIN_LOOP_NUM 25
 
@@ -33,6 +34,8 @@ class KeyFrame
 {
 public:
 	KeyFrame();
+
+	// KeyFrame(TransmitKeyFrame& dummy_kf);
 
 	KeyFrame(double _time_stamp, int _index, Vector3d &_vio_T_w_i, Matrix3d &_vio_R_w_i, cv::Mat &_image,
 			 vector<cv::Point3f> &_point_3d, vector<cv::Point2f> &_point_2d_uv, vector<cv::Point2f> &_point_2d_normal, 

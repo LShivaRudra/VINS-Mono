@@ -13,6 +13,27 @@ static void reduceVector(vector<Derived> &v, vector<uchar> status)
 // create keyframe online
 KeyFrame::KeyFrame(){}
 
+// KeyFrame::KeyFrame(TransmitKeyFrame& dummy_kf){
+// 	time_stamp = dummy_kf.time_stamp;
+// 	index = dummy_kf.index;
+// 	vio_T_w_i = dummy_kf.vio_T_w_i;
+// 	vio_R_w_i = dummy_kf.vio_R_w_i;
+// 	T_w_i = dummy_kf.T_w_i;
+// 	R_w_i = dummy_kf.R_w_i;
+// 	origin_vio_R = dummy_kf.origin_vio_R;
+// 	origin_vio_T = dummy_kf.origin_vio_T;
+// 	//image = 
+// 	//point3d etc
+// 	point_id = dummy_kf.point_id;
+// 	//keypoints
+// 	//brief points
+// 	has_fast_point = dummy_kf.has_fast_point;
+// 	sequence = dummy_kf.sequence;
+// 	has_loop = dummy_kf.has_loop;
+// 	loop_index = dummy_kf.loop_index;
+// 	loop_info = dummy_kf.loop_info;
+// }
+
 KeyFrame::KeyFrame(double _time_stamp, int _index, Vector3d &_vio_T_w_i, Matrix3d &_vio_R_w_i, cv::Mat &_image,
 		           vector<cv::Point3f> &_point_3d, vector<cv::Point2f> &_point_2d_uv, vector<cv::Point2f> &_point_2d_norm,
 		           vector<double> &_point_id, int _sequence)
